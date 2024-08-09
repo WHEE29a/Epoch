@@ -1,0 +1,1337 @@
+# Libraries
+from random import randint as rd
+from google.colab import output
+from time import sleep
+
+# Output Clear
+def op():
+    output.clear()
+
+# Variables
+var = {"username":"e","level":1,"exp":0,"totalxp":0,"jumps":0,"gold":0,"weapon":"nil","armor":"nil","enemiesdefeated":0,"bossesdefeated":0,"mainclass":"None","advclass":"None","dev":False}
+prog = {0:10,1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0,9:0}
+bossdefeat = []
+
+# All Items
+allwpn  = {
+           "Dual Storm Axes"    : {"dmg":    15, "cost":    0},
+           "Crystal Fang"       : {"dmg":    50, "cost":  100},
+           "Celestial Sword"    : {"dmg":    75, "cost":  300},
+           "Dual Astral Blades" : {"dmg":   100, "cost":  750},
+           "Heaven's Cloud"     : {"dmg":   200, "cost": 1500},
+           "Eternity's Edge"    : {"dmg":   300, "cost": 3000},
+           "Void's Whisper"     : {"dmg":   400, "cost":    0},
+           "Titan's Judgement"  : {"dmg":   700, "cost":    0},
+           "Fish"               : {"dmg":   500, "cost":    0},
+           "Fisticuffs"         : {"dmg":   450, "cost":    0}
+          }
+allamr  = {
+           "None"            : {"def":    0, "cost":    0},
+           "Crystal Armor"   : {"def":   10, "cost":  120},
+           "Shadow Suit"     : {"def":   20, "cost":  350},
+           "Dragon's Scale"  : {"def":   30, "cost":  800},
+           "Mythril Vest"    : {"def":   40, "cost": 1750},
+           "Pheonix's Guard" : {"def":   50, "cost": 3500},
+           "Void's Veil"     : {"def":   60, "cost":    0},
+           "Titan's Aegis"   : {"def":  120, "cost":    0},
+           "Turtle Shell"    : {"def":  100, "cost":    0},
+           "Netherite Armor" : {"def":   75, "cost":    0}
+          }
+allpots = {
+           "health" : {"name": "Health Potion", "effect": "health", "cost": 100},
+           "mana"   : {"name": "Mana Potion"  , "effect": "mana"  , "cost": 100}
+          }
+
+# Player Stats
+stats      = {"Mana"     : 1, "Health"      : 1, "Dexterity" : 1,
+              "Fighter"  : 0, "Mage"        : 0,
+              "Healer"   : 0, "Necromancer" : 0}
+attributes = {"Mana"     : 50, "Health":   50, "Dexterity":   50}
+player     = {"Mana"     : stats["Mana"]      * attributes["Mana"]     //2,
+              "Health"   : stats["Health"]    * attributes["Health"]      ,
+              "Dexterity": stats["Dexterity"] * attributes["Dexterity"]/25,
+              "Fighter"  : int(stats["Fighter"] * 0.25),
+              "Mage"     : int(stats["Mage"] * 0.25),
+              "Healer"   : int(stats["Healer"] * 0.05) + 1}
+
+# Player Inventory
+inv        = {
+              "weapons"  : []  ,
+              "armors"   : []    ,
+              "potions"  : {"health": 0, "mana": 0},
+              "items"    : []
+             }
+
+# Developer mode
+devs       = "whee29a"
+
+
+# Magic Spells
+magic_spells = {
+    "Heal"    : {"heal": 25, "mana_cost": 15},
+    "Fireball": {"dmg" : 30, "mana_cost": 20},
+    "Deflect" : {"defl": 35, "mana_cost": 25},
+    "Heavenly Restriction": {"chain": 250, "mana_cost":30}
+}
+magic = {"deflect":False,"Chain":False}
+necro = []
+
+# Enemy Create Function
+def newenemy(name, hp, atk, drops=[]):
+    return {"name": name, "health": hp, "dmg": atk, "drops": drops}
+
+# Enemies
+enemylist = [
+    [
+        newenemy("Goblin",      20,    4, [{"name": "Goblin Tooth",      "value": 15}, {"name": "Goblin Ear",      "value": 10}]),
+        newenemy("Ogre",        50,   10, [{"name": "Ogre Club",         "value": 20}, {"name": "Ogre Fur",        "value": 15}]),
+        newenemy("Skeleton",    80,   16, [{"name": "Skeleton Bone",     "value": 25}, {"name": "Rusty Dagger",    "value": 20}]),
+        newenemy("Dragon",     100,   20, [{"name": "Dragon Scale",      "value": 30}, {"name": "Dragon Claw",     "value": 25}]),
+    ],
+    [
+        newenemy("Zombie",     120,   24, [{"name": "Decayed Flesh",     "value": 35}, {"name": "Rotting Limb",    "value": 30}]),
+        newenemy("Werewolf",   150,   30, [{"name": "Werewolf Fang",     "value": 40}, {"name": "Wolf Pelt",       "value": 35}]),
+        newenemy("Witch",      180,   36, [{"name": "Magic Potion",      "value": 45}, {"name": "Witch's Hat",     "value": 40}]),
+        newenemy("Ghost",      200,   40, [{"name": "Ectoplasm",         "value": 50}, {"name": "Ghostly Chain",   "value": 45}]),
+    ],
+    [
+        newenemy("Harpy",      220,   44, [{"name": "Harpy Feather",     "value": 55}, {"name": "Talon",           "value": 50}]),
+        newenemy("Troll",      250,   50, [{"name": "Troll Tooth",       "value": 60}, {"name": "Troll Hide",      "value": 55}]),
+        newenemy("Vampire",    280,   56, [{"name": "Vampire Fang",      "value": 65}, {"name": "Blood Vial",      "value": 60}]),
+        newenemy("Banshee",    300,   60, [{"name": "Banshee Essence",   "value": 70}, {"name": "Wail Fragment",   "value": 65}]),
+    ],
+    [
+        newenemy("Minotaur",   320,   64, [{"name": "Minotaur Horn",     "value": 75}, {"name": "Minotaur Hoof",   "value": 70}]),
+        newenemy("Golem",      350,   70, [{"name": "Golem Stone",       "value": 80}, {"name": "Magic Crystal",   "value": 75}]),
+        newenemy("Specter",    380,   76, [{"name": "Specter Essence",   "value": 85}, {"name": "Shadow Cloth",    "value": 80}]),
+        newenemy("Hydra",      400,   80, [{"name": "Hydra Head",        "value": 90}, {"name": "Venomous Blood",  "value": 85}]),
+    ],
+    [
+        newenemy("Griffin",    420,   84, [{"name": "Griffin Feather",   "value": 95}, {"name": "Griffin Beak",    "value": 90}]),
+        newenemy("Cyclops",    450,   90, [{"name": "Cyclops Eye",       "value": 100}, {"name": "Giant Club",      "value": 95}]),
+        newenemy("Lich",       480,   96, [{"name": "Lich's Phylactery", "value": 105}, {"name": "Dark Robe",       "value": 100}]),
+        newenemy("Siren",      500,  100, [{"name": "Siren Scale",       "value": 110}, {"name": "Enchanted Pearl", "value": 105}]),
+    ],
+    [
+        newenemy("Yeti",       520,  104, [{"name": "Yeti Fur",          "value": 115}, {"name": "Frozen Claw",     "value": 110}]),
+        newenemy("Centaur",    550,  110, [{"name": "Centaur Bow",       "value": 120}, {"name": "Hoof",            "value": 115}]),
+        newenemy("Chimera",    580,  116, [{"name": "Chimera Tail",      "value": 125}, {"name": "Mixed Essence",   "value": 120}]),
+        newenemy("Phoenix",    600,  120, [{"name": "Phoenix Feather",   "value": 130}, {"name": "Flaming Heart",   "value": 125}]),
+    ],
+    [
+        newenemy("Basilisk",   620,  124, [{"name": "Basilisk Scale",    "value": 135}, {"name": "Petrified Eye",   "value": 130}]),
+        newenemy("Gorgon",     650,  130, [{"name": "Gorgon Venom",      "value": 140}, {"name": "Stone Gaze",      "value": 135}]),
+        newenemy("Kraken",     680,  136, [{"name": "Kraken Tentacle",   "value": 145}, {"name": "Ocean's Heart",   "value": 140}]),
+        newenemy("Cerberus",   700,  140, [{"name": "Cerberus Fang",     "value": 150}, {"name": "Hellhound Fur",   "value": 145}]),
+    ],
+    [
+        newenemy("Elemental",  720,  144, [{"name": "Elemental Core",    "value": 155}, {"name": "Pure Essence",    "value": 150}]),
+        newenemy("Djinn"   ,   750,  150, [{"name": "Djinn Lamp",        "value": 160}, {"name": "Mystic Sand",     "value": 155}]),
+        newenemy("Charybdis",  780,  156, [{"name": "Whirlpool Gem",     "value": 165}, {"name": "Abyssal Pearl",   "value": 160}]),
+        newenemy("Manticore",  800,  160, [{"name": "Manticore Sting",   "value": 170}, {"name": "Manticore Hide",  "value": 165}]),
+    ],
+    [
+        newenemy("Naga",       820,  164, [{"name": "Naga Scale",        "value": 175}, {"name": "Serpent Fang",    "value": 170}]),
+        newenemy("Fenrir",     850,  170, [{"name": "Fenrir Claw",       "value": 180}, {"name": "Frost Fur",       "value": 175}]),
+        newenemy("Beelzebub",  880,  176, [{"name": "Demon Wing",        "value": 185}, {"name": "Hellfire Ember",  "value": 180}]),
+        newenemy("Ifrit",      900,  180, [{"name": "Ifrit Flame",       "value": 190}, {"name": "Burning Core",    "value": 185}]),
+    ],
+    [
+        newenemy("Mahoraga",  1000,  250, [{"name": "Eight-Handled Wheel", "value": 250}, {"name": "Sword of Extermination", "value": 225}])
+    ],
+    [
+        newenemy("EliSaysHa", 9000, 5000, [{"name":"Ezlink card","value":9999}])
+    ]
+]
+
+# Enemy Bosses
+bosses = [
+        newenemy("Ghoul",              150,   30, [{"name": "Ghoul Claw",        "value":  40}, {"name": "Ghoul Essence",    "value":  30}]),
+        newenemy("Behemoth",           250,   50, [{"name": "Behemoth Horn",     "value":  60}, {"name": "Behemoth's Blood", "value":  50}]),
+        newenemy("Leviathan",          350,   70, [{"name": "Leviathan Scale",   "value":  80}, {"name": "Sea Jewel",        "value":  70}]),
+        newenemy("Archdemon",          450,   90, [{"name": "Demon Horn",        "value": 100}, {"name": "Infernal Essence", "value":  90}]),
+        newenemy("Ancient Dragon",     550,  110, [{"name": "Ancient Scale",     "value": 120}, {"name": "Dragon Heart",     "value": 110}]),
+        newenemy("Death Knight",       650,  130, [{"name": "Void's Veil",       "value": 140}, {"name": "Void's Whisper",   "value": 130}]),
+        newenemy("Void Lich",          750,  150, [{"name": "Void Essence",      "value": 160}, {"name": "Soul Shard",       "value": 150}]),
+        newenemy("Celestial Phoenix",  850,  170, [{"name": "Celestial Feather", "value": 180}, {"name": "Radiant Heart",    "value": 170}]),
+        newenemy("Eternal Tyrant",    1000,  200, [{"name": "Titan's Judgement", "value": 200}, {"name": "Titan's Wrath",    "value": 190}]),
+]
+
+# Character Class
+def charclass(og):
+    if og == "main":
+        print("Pick your Starter Class.\n1. Fighter (+Melee Damage)\n2. Mage (+Magic Damage)")
+        choice = input()
+        if choice.isdigit() and len(choice) == 1 and choice in "12":
+            if choice == "1":
+                var['mainclass'] = "Fighter"
+                stats["Fighter"] += 1
+            elif choice == "2":
+                var['mainclass'] = "Mage"
+                stats["Mage"] += 1
+            op()
+            print(f"You are now {var['mainclass']}. \nConfirm? (Y/N)")
+            yesno = input()
+            if yesno.lower() not in "yes":
+                charclass("main")
+        else:
+            print("Invalid Input.")
+            charclass("main")
+    if og == "adv":
+        print("Pick an Advanced Class.\n1. Healer (Heal every round)\n2. Necromancer (Call upon previous enemies to fight for you)")
+        choice = input()
+        if choice.isdigit() and len(choice) == 1 and choice in "12":
+            if choice == "1":
+                var['advclass'] = "Healer"
+                stats["Healer"] += 1
+            elif choice == "2":
+                var['advclass'] = "Necromancer"
+                stats["Necromancer"] += 1
+            op()
+            print(f"You are now {var['advclass']}. \nConfirm? (Y/N)")
+            yesno = input()
+            if yesno.lower() not in "yes":
+                charclass("adv")
+        else:
+            print("Invalid Input.")
+            charclass("adv")
+    sleep(1)
+    op()
+
+# New Game
+def newgame():
+    with open("reset.txt","w") as re:
+        re.write("13,e,1,0,0,0,0,Nil,Nil,0,0,None,None,False,10,10,0,0,0,0,0,0,0,0,0,0,7,1,1,1,0,0,0,0,0,0,0,0")
+    load("reset.txt","file")
+    op()
+    username = ""
+    while 20 > len(username) < 2:
+        username = input("Enter your username: ")
+        if len(username) < 2:
+            print("Username needs to be more than 2 letters.")
+    if username.lower() in devs:
+        pw = input("Input your password: ")
+        if pw == "DO NOT LEAN":
+            var['dev'] = True
+            print("Hello,", username + ".")
+        else:
+            print("Hello,", username + ".")
+    else:
+        print("Hello,", username + ".")
+    var["username"] = username
+    var["weapon"] = list(allwpn.keys())[0]
+    var["armor"] = list(allamr.keys())[0]
+    inv["weapons"].append(list(allwpn.keys())[0])
+    inv["armors"].append(list(allamr.keys())[0])
+    sleep(3)
+    charclass("main")
+    charclass("adv")
+    op()
+    loading()
+    main()
+
+# Win check
+def win():
+    if len(bossdefeat) == 9:
+        op()
+        print("You beat the final boss and won!")
+        var["gold"] += 1000
+        print("Do you want to continue playing? (type 'adapt' or 'final boss' in the enemy select menu to fight special enemies)\n1. Yes\n2. No")
+        choice = input()
+        if len(choice) == 1 and choice in "12":
+            if choice == "1":
+                sleep(1)
+                main()
+            else:
+                sleep(1)
+                exit()
+
+# Loading Screen
+def loading():
+    load = 0
+    while load < 100:
+        load += rd(1, 20)
+        if load >= 100:
+            load = 100
+        print(f"Loading {load}%")
+        sleep(2)
+        op()
+    print("Load finish")
+    sleep(3)
+    op()
+
+# Update Stats Dictionary
+def updatestats():
+    player["Mana"]      = stats["Mana"] * attributes["Mana"] // 2
+    player["Health"]    = stats["Health"] * attributes["Health"]
+    player["Dexterity"] = stats["Dexterity"] * attributes["Dexterity"] // 25
+    player["Fighter"]   = int(stats["Fighter"] * 0.25)
+    player["Mage"]      = int(stats["Mage"] * 0.25)
+    player["Healer"]    = int(stats["Healer"] * 0.1)
+
+# Check Level
+def levelcheck(origin):
+    exp = var["exp"]
+    level = var["level"]
+    jumps = var["jumps"]
+    jumpcount = 0
+    if origin == "bat":
+        oglevel = level
+        leveling = True
+        while leveling:
+            if exp >= 100 * level:
+                exp -= 100 * level
+                level += 1
+                jumpcount += 1
+                jumps += 1
+                var["level"] = level
+                var["jumps"] = jumps
+                var["exp"] = exp
+            else:
+                leveling = False
+        if level != oglevel:
+            op()
+            print(f"Congratulations! You have reached level {level}")
+    elif origin == "main":
+        jumpcount = level
+        for stat in stats.keys():
+            stats[stat] = 1
+
+    while jumpcount != 0:
+        count = 0
+        temp = []
+        for stat, value in stats.items():
+            if value > 0:
+                count += 1
+                print(f"{count}. {stat}: {value}")
+                temp.append(stat)
+        print(f"You have {jumpcount} points left to use. What would you like to use it on?")
+        print(temp)
+        choice = input().strip()
+        if choice.isdigit():
+            if len(choice) == 1 and 0 < int(choice) <= count:
+                print(f"How many points would u like to use on {temp[int(choice)-1]}?")
+                spent = input()
+                if spent.isdigit():
+                    if int(spent) <= jumpcount:
+                        jumpcount -= int(spent)
+                        stats[temp[int(choice)-1]] += int(spent)
+                        print(f"You spent {spent} on {temp[int(choice)-1]}")
+                        sleep(3)
+                    else:
+                        print("Invalid Input.")
+                else:
+                    print("Invalid Input.")
+            else:
+                print("Invalid Input.")
+        else:
+            print("Invalid Input.")
+        op()
+    updatestats()
+
+# Display
+def disp(origin): # origins shop inv main dev enemysel
+    print("-------------")
+    print(f"{var['username']}")
+    print(f"Class: {var['mainclass']} & {var['advclass']}")
+    if origin in "main esel":
+        print(f"Level {var['level']}")
+        print(f"XP: {var['exp']}/{100 * var['level'] + 100}")
+    if origin in "shop main":
+        print(f"Currency: {var['gold']} gold")
+    if origin in "shop inv main esel":
+        print(f"Weapon: {var['weapon']}")
+        print(f"Armor: {var['armor']}")
+    if origin in "inv main esel":
+        print(f"Health: {player['Health']}")
+        print(f"Mana: {player['Mana']}")
+    print("-------------")
+
+# Battle
+def battle(enemy):
+    exp = var['exp']
+    gold = var['gold']
+    totalxp = var['totalxp']
+    weapon = var["weapon"]
+    armor = allamr[var["armor"]]["def"]
+    dmg = allwpn[weapon]["dmg"]
+    mana = player["Mana"]
+    edmg = enemy["dmg"]
+    health = player["Health"]
+    enemyhealth = enemy["health"]
+    enemyname = enemy["name"]
+    stuncount = 0
+    dext = player["Dexterity"]
+    op()
+    while health > 0 and enemyhealth > 0:
+        op()
+        sleep(0.45)
+        print(f"You run into a {enemyname}!")
+        print(f"Enemy HP: {enemyhealth}\nYour HP: {health}\nYour Mana: {mana}")
+        print("Your Turn.\n1. Attack\n2. Dodge\n3. Use Magic\n4. Use Potion\n5. Run (Lose XP)")
+        choice = input()
+        if choice == "1":
+            atk = rd(dmg//2, dmg)
+            atk += int(atk * player["Fighter"])
+            enemyhealth -= atk
+            print(f"You hit the {enemyname} with your {weapon}!\nThe {enemyname} takes {atk} damage!")
+            sleep(2)
+        elif choice == "2":
+            luck = rd(1,100)
+            if luck <= dext:
+                print(f"You dodge the {enemyname}'s attack!\nThe {enemyname} is stunned for one round.")
+                stuncount = 2
+                sleep(2)
+            else:
+                print("You failed to dodge!")
+                sleep(2)
+        elif choice == "3":
+            health,enemyhealth,mana = use_magic(enemy,health,enemyhealth,mana)
+            sleep(2)
+        elif choice == "4":
+            health,mana = use_potion("Btl",health,mana,enemyhealth)
+            sleep(2)
+        elif choice == "5":
+            exp = max(0, exp - 10)
+            main()
+            op()
+        else:
+            print("Invalid Input.")
+            continue
+        if stuncount == 0 and enemyhealth > 0:
+            enemyatk = rd(edmg//2, edmg)
+            if magic['deflect']:
+                luck = rd(1,100)
+                deflected = 0
+                if luck > 10:
+                    if 11 <= luck <= 20:
+                        deflected = enemyatk
+                    elif luck == 100:
+                        deflected = int(enemyatk * 1.5)
+                    else:
+                        deflected = enemyatk // 2
+                    print(f"You deflect the {enemyname}'s attack for {deflected} damage!")
+                else:
+                    armorblock = rd(armor//4,armor)
+                    totalatk = max(enemyatk - armorblock,1)
+                    health -= totalatk
+                    print(f"The {enemyname} deals you {totalatk} damage!")
+            else:
+                armorblock = rd(armor//4,armor)
+                totalatk = max(enemyatk - armorblock,1)
+                health -= totalatk
+                print(f"The {enemyname} deals you {totalatk} damage!")
+            sleep(3)
+        elif magic["Chain"]:
+            print("The enemy has been chained down and cannot attack.")
+            stuncount = 2
+        elif stuncount == 2:
+            stuncount -= 1
+        elif stuncount == 1:
+            stuncount = 0
+        if stats["Healer"] > 0:
+            healed = int(player["Healer"] * stats["Healer"])
+            health += healed
+            print(f"You healed for {healed}hp")
+        player["Health"] = health
+        magic["Chain"] = False
+        player["Mana"] = mana
+
+    if enemyhealth <= 0:
+        print(f"{enemyname} defeated!",end = "")
+        if enemyname == "Mahoraga":
+            print("Mahoraga has adapted.")
+            enemylist[-2][0]["health"] *= 2
+            enemylist[-2][0]["dmg"] *= 2
+        boss = False
+        for i in range(1,10):
+            if enemyname == bosses[i-1]["name"]:
+                if enemyname not in bossdefeat:
+                    bossdefeat.append(enemyname)
+                    print(f"Level {i+1} unlocked.")
+                var["bossesdefeated"] += 1
+                boss = True
+        if not boss:
+            for i in range(1,10):
+                for enemies in enemylist[i-1]:
+                    if enemies["name"] == enemyname:
+                        prog[i] += 1
+            var["enemiesdefeated"] += 1
+        expadded = rd(enemy["health"]//2,enemy["health"])
+        exp += expadded
+        totalxp += expadded
+        gold += rd(5, 15)
+        drop = rd(0, len(enemy["drops"]) - 1)
+        item = enemy["drops"][drop]
+        if item["name"] in "Void's Whisper Titan's Judgement":
+            inv["weapons"].append(item["name"])
+        elif item["name"] in "Void's Veil Titan's Aegis":
+            inv["armor"].append(item["name"])
+        else:
+            inv["items"].append(item["name"])
+        print(f"\n{enemyname} dropped {item['name']}!")
+        levelcheck("bat")
+        necro.append(enemyname)
+        while len(necro) > stats["Necromancer"]:
+            necro.pop(0)
+        sleep(5)
+        op()
+        var['exp'] = exp
+        var['gold'] = gold
+        var['totalxp'] = totalxp
+        main()
+
+    elif health <= 0:
+        print(f"You were defeated by {enemyname}.")
+        sleep(3)
+        print("Game Over.")
+        revival = False
+        for i in inv["items"]:
+            if i == "Ezlink card":
+                revival = True
+        if revival:
+            sleep(5)
+            print("wait...")
+            sleep(3)
+            op()
+            print("You wield... Ezlink card")
+            inv["items"].remove("Ezlink card")
+            sleep(3)
+            op()
+            print("You wield... Elisha Ho Ee Shan's Ezlink Card.")
+            revival = False
+            sleep(5)
+            print("You have been revived.")
+            player["Health"] = stats["Health"] * attributes["Health"]
+            sleep(3)
+            var['exp'] = exp
+            var['gold'] = gold
+            var['totalxp'] = totalxp
+            main()
+        else:
+            player["Health"] = 0
+            sleep(3)
+            print("Play again? (Y/N)")
+            again = input().lower()
+            if again in "yes":
+                op()
+                var['exp'] = exp
+                var['gold'] = gold
+                var['totalxp'] = totalxp
+                newgame()
+            else:
+                pass
+    op()
+
+# Fortuna's Vault
+def fortuna():
+    gold = var["gold"]
+    while True:
+        op()
+        disp("shop")
+        print("Do you want to open Fortuna's Vault for 200 gold? (Includes Special Items)\n1. Open\n2. Back")
+        choice = input().lower()
+        if choice == "1":
+            if gold >= 200:
+                print("Opening Vault",end="")
+                for i in range(3):
+                    print(".",end="")
+                luck = rd(1,100)
+                items = ["Mana Potion","Health Potion","Fisticuffs","Netherite Armor","Fish","Turtle Shell"]
+                if luck > 95:
+                    item = items[rd(2,5)]
+                elif luck > 80:
+                    item = items[rd(2,3)]
+                else:
+                    item = items[rd(0,1)]
+                if item in "Fisticuffs Fish":
+                    exist = False
+                    for weapon in inv["weapons"]:
+                        if weapon == item:
+                            exist = True
+                    if not exist:
+                        inv["weapons"].append(item)
+                elif item in "Netherite Armor Turtle Shell":
+                    exist = False
+                    for armor in inv["armors"]:
+                        if armor == item:
+                            exist = True
+                    if not exist:
+                        inv["armors"].append(item)
+                else:
+                    inv["potions"][item.split()[0].lower()] += 1
+                print(f"You opened one and got a {item}!")
+                var["gold"] = gold
+            else:
+                print("You do not have enough gold.")
+                sleep(2)
+                break
+        else:
+            break
+
+# Shop
+def shop():
+    gold = var['gold']
+    while True:
+        op()
+        disp("shop")
+        print("Welcome to the Shop!")
+        print("1. Buy Weapons\n2. Buy Armor\n3. Buy Potions\n4. Sell Items\n5. Fortuna's Vault\n6. Exit")
+        choice = input("Enter your choice: ").strip()
+        if choice == "1":
+            print("Weapons for sale:")
+            wpnlist = list(allwpn.items())[1:6]
+            wpn_list = []
+            for i in range(len(wpnlist)):
+                if wpnlist[i][0] == "Fisticuffs" or wpnlist[i][0] == "Cursed Sword" or wpnlist[i][0] in inv["weapons"]:
+                    continue
+                wpn_list.append(wpnlist[i])
+            for i in range(len(wpn_list)):
+                wpn_name, wpn_stats = wpn_list[i]
+                print(f"{i + 1}. {wpn_name} - Damage: {wpn_stats['dmg']} - Cost: {wpn_stats['cost']} gold")
+            print("Enter the number of the weapon you want to buy, or enter 0 to go back:")
+            wpn_choice = input("Enter your choice: ").strip()
+            if wpn_choice == "0":
+                shop()
+
+            elif wpn_choice.isdigit() and 1 <= int(wpn_choice) <= len(wpn_list):
+                wpn_name, wpn_stats = wpn_list[int(wpn_choice) - 1]
+                if gold >= wpn_stats["cost"]:
+                    gold -= wpn_stats["cost"]
+                    var['gold'] = gold
+                    inv["weapons"].append(wpn_name)
+                    print(f"You bought {wpn_name}!")
+                    var['weapon'] = wpn_name
+                else:
+                    print("Not enough gold!")
+            else:
+                print("Invalid Input. Please enter a valid number or 0 to go back.")
+
+        elif choice == "2":
+            print("Armor for sale:")
+            amrlist = list(allamr.items())[1:6]
+            amr_list = []
+            for i in range(len(amrlist)):
+                if amrlist[i][0] == "Cursed Armor" or amrlist[i][0] in inv["weapons"]:
+                    continue
+                amr_list.append(amrlist[i])
+            for i in range(len(amr_list)):
+                amr_name, amr_stats = amr_list[i]
+                print(f"{i + 1}. {amr_name} - Defense: {amr_stats['def']} - Cost: {amr_stats['cost']} gold")
+            print("Enter the number of the armor you want to buy, or enter 0 to go back:")
+            amr_choice = input("Enter your choice: ").strip()
+            if amr_choice == "0":
+                var['gold'] = gold
+                shop()
+            elif amr_choice.isdigit() and 1 <= int(amr_choice) <= len(amr_list):
+                amr_name, amr_stats = amr_list[int(amr_choice) - 1]
+                if gold >= amr_stats["cost"]:
+                    gold -= amr_stats["cost"]
+                    var['gold'] = gold
+                    inv["armors"].append(amr_name)
+                    print(f"You bought {amr_name}!")
+                    var["armor"] = amr_name
+                else:
+                    print("Not enough gold!")
+            else:
+                print("Invalid Input. Please enter a valid number or 0 to go back.")
+        elif choice == "3":
+            print("Potions for sale:")
+            print(f"1. {allpots['health']['name']} - Effect: {allpots['potions']['health']['effect']} - Cost: {allpots['potions']['health']['cost']} gold")
+            print(f"2. {allpots['potions']['mana']['name']} - Effect: {allpots['potions']['mana']['effect']} - Cost: {allpots['potions']['mana']['cost']} gold")
+            print("Enter the number of the potion you want to buy, or enter 0 to go back:")
+            pot_choice = input("Enter your choice: ").strip()
+            if pot_choice == "0":
+                var['gold'] = gold
+                shop()
+            elif pot_choice == "1":
+                if gold >= allpots["potions"]["health"]["cost"]:
+                    gold -= allpots["potions"]["health"]["cost"]
+                    inv["potions"]["health"] += 1
+                    print("Health Potion bought!")
+                else:
+                    print("Not enough gold!")
+            elif pot_choice == "2":
+                if gold >= allpots["potions"]["mana"]["cost"]:
+                    gold -= allpots["potions"]["mana"]["cost"]
+                    inv["potions"]["mana"] += 1
+                    print("Mana Potion bought!")
+                else:
+                    print("Not enough gold!")
+            else:
+                print("Invalid Input. Please enter 1, 2 or 0 to go back.")
+        elif choice == "5":
+            fortuna()
+            shop()
+        elif choice == "4":
+            item_value = 0
+            print("Sell items:")
+            for i in range(len(inv["items"])):
+                print(f"{i + 1}. {inv['items'][i]}")
+            print("Enter the number of the item or \"all\" to sell items, or enter 0 to go back:")
+            sell_choice = input("Enter your choice: ").strip()
+            if sell_choice == "0":
+                var['gold'] = gold
+                shop()
+            elif sell_choice.isdigit():
+                if 1 <= int(sell_choice) <= len(inv["items"]):
+                    item_name = inv["items"][int(sell_choice) - 1]
+                    for level in enemylist:
+                        for enemy in level:
+                            for item in enemy["drops"]:
+                                if item["name"] == item_name:
+                                    item_value = item["value"]
+                                    break
+                            if item_value != 0:
+                                break
+                    gold += item_value
+                    inv["items"].remove(item_name)
+                    print(f"You sold {item_name} for {item_value} gold!")
+            elif sell_choice.isalpha():
+                if sell_choice.lower() in "all":
+                    totalvalue = 0
+                    for item_name in inv["items"]:
+                        for level in enemylist:
+                            for enemy in level:
+                                for item in enemy["drops"]:
+                                    if item["name"] == item_name:
+                                        item_value = item["value"]
+                                        break
+                                if item_value != 0:
+                                    break
+                        totalvalue += item_value
+                        gold += item_value
+                        inv["items"].remove(item_name)
+                        print(f"You sold all your items for {totalvalue} gold!")
+            else:
+                print("Invalid Input. Please enter a valid number or 0 to go back.")
+        elif choice == "6":
+            var['gold'] = gold
+            main()
+
+        else:
+            print("Invalid Input. Please enter a number between 1 and 5.")
+            sleep(2)
+        sleep(2)
+        op()
+        var['gold'] = gold
+        shop()
+
+# Manage Inventory
+def manage_inventory():
+    weapon = var['weapon']
+    armor = var['armor']
+    op()
+    disp("inv")
+    print("Inventory:")
+    print("Weapons:")
+    for i in range(len(inv["weapons"])):
+        print(f"{i + 1}. {inv['weapons'][i]}")
+    print("Armor:")
+    for i in range(len(inv["armors"])):
+        print(f"{i + 1}. {inv['armors'][i]}")
+    print("Potions:")
+    print(f"Health Potions: {inv['potions']['health']}")
+    print(f"Mana Potions: {inv['potions']['mana']}")
+    print("Items:")
+    for i in range(len(inv["items"])):
+        print(f"{i + 1}. {inv['items'][i]}")
+    print("Choose an option:\n1. Equip Weapon\n2. Equip Armor\n3. Use Potion\n4. Exit")
+    choice = input()
+    if choice == "1":
+        print("Choose a weapon:")
+        for i in range(len(inv["weapons"])):
+            print(f"{i + 1}. {inv['weapons'][i]}")
+        wpn_choice = int(input()) - 1
+        if 0 <= wpn_choice < len(inv["weapons"]):
+            weapon = inv["weapons"][wpn_choice]
+            print(f"Weapon changed to {weapon}")
+        else:
+            print("Invalid Input.")
+        sleep(2)
+        var['weapon'] = weapon
+        var['armor'] = armor
+        manage_inventory()
+    elif choice == "2":
+        print("Choose an armor:")
+        for i in range(len(inv["armors"])):
+            print(f"{i + 1}. {inv['armors'][i]}")
+
+        amr_choice = int(input()) - 1
+
+        if 0 <= amr_choice < len(inv["armors"]):
+            armor = inv["armors"][amr_choice]
+            print(f"Armor changed to {armor}")
+
+        else:
+            print("Invalid Input.")
+
+        sleep(2)
+        var['weapon'] = weapon
+        var['armor'] = armor
+        manage_inventory()
+    elif choice == "3":
+        health = player["Health"]
+        mana = player["Mana"]
+        use_potion("Inv",health,mana,0)
+    elif choice == "4":
+        var['weapon'] = weapon
+        var['armor'] = armor
+        main()
+    else:
+        print("Invalid Input.")
+        sleep(2)
+        var['weapon'] = weapon
+        var['armor'] = armor
+        manage_inventory()
+
+# Use Potion
+def use_potion(origin,health,mana,ehealth):
+    op()
+    if origin == "Btl":
+        print(f"Enemy HP: {ehealth}")
+    print(f"Your HP: {health}\nYour Mana: {mana}")
+    print("Use Potion:")
+    print("1. Health Potion")
+    print("2. Mana Potion")
+    print("Choose a potion to use, or enter 0 to go back:")
+    choice = input()
+    if choice == "1":
+        if inv["potions"]["health"] > 0:
+            health += 20
+            inv["potions"]["health"] -= 1
+            print("Used Health Potion. +20 HP!")
+        else:
+            print("No Health Potions left!")
+    elif choice == "2":
+        if inv["potions"]["mana"] > 0:
+            mana += 15
+            inv["potions"]["mana"] -= 1
+            print("Used Mana Potion. +15 Mana!")
+        else:
+            print("No Mana Potions left!")
+    elif choice == "0":
+        if origin == "Inv":
+            manage_inventory()
+        elif origin == "Btl":
+            return health,mana
+    else:
+        print("Invalid Input.")
+    sleep(2)
+    if origin == "Inv":
+        manage_inventory()
+    elif origin == "Btl":
+        return health,mana
+
+# Use Magic
+def use_magic(enemy,health,ehealth,mana):
+    op()
+    print(f"Enemy HP: {ehealth}\nYour HP: {health}\nYour Mana: {mana}")
+    print("Magic Spells:")
+    spell_keys = list(magic_spells.keys())
+    for i in range(4):
+        print(f"{i+1}. {spell_keys[i]} - Mana Cost: {magic_spells[spell_keys[i]]['mana_cost']}")
+    if stats["Necromancer"] > 0:
+        print("5. Necromancer")
+    print("Choose a spell to cast, or enter 0 to go back:")
+    choice = input()
+    if choice.isdigit():
+        choice = int(choice)
+        if 1 <= choice <= 4:
+            spell_name = spell_keys[choice - 1]
+            spell = magic_spells[spell_name]
+            if mana >= spell["mana_cost"]:
+                mana -= spell["mana_cost"]
+                if "heal" in spell:
+                    health += spell["heal"] + int(spell["heal"] * player["Mage"]) * var["level"]
+                    print(f"You cast {spell_name}!\nYou healed for {spell['heal']} HP!")
+                elif "dmg" in spell:
+                    ehealth -= spell["dmg"] + int(spell["dmg"] * player["Mage"]) * var["level"]
+                    print(f"You cast {spell_name}!\nThe {enemy['name']} takes {spell['dmg']} damage!")
+                elif "defl" in spell:
+                    magic["deflect"] = True
+                elif "chain" in spell:
+                    magic["Chain"] = True
+                    print(f"You chained the {enemy}")
+        elif choice == 5 and stats["Necromancer"] > 0:
+            for i in range(len(necro)):
+                print("Pick a creature to ressurect")
+                print(f"{i+1}. {necro[i]}")
+            print("0. Go back")
+            res = input()
+            if res.isdigit():
+                if 1 <= int(res) <= len(necro):
+                    creature = necro[int(res)-1]
+                    creaturedmg = 0
+                    for level in enemylist:
+                        for enemy in level:
+                            if enemy["name"] == creature:
+                                creaturedmg = enemy["dmg"]
+                    luck = rd(1,100)
+                    if 1 <= luck <= 10:
+                        damage = creaturedmg # Critical hit
+                        text = ["at full strength ","It turns to stone and crumbles."]
+                    elif luck == 100:
+                        damage = int(creaturedmg * 1.5) # Critical hit
+                        text = ["at 150% power ","It explodes into ashes and fades away in the wind."]
+                    else:
+                        damage = creaturedmg // 2
+                        text = ["","It disappears."]
+                    print(f"You summon your {creature} {text[0]}and it attacks the {enemy['name']} for {damage}!\n{text[1]}")
+                    necro.pop(int(res))
+                if res == "0":
+                    use_magic(enemy,health,ehealth,mana)
+
+                else:
+                    print("Invalid Input.")
+                    use_magic(enemy,health,ehealth,mana)
+
+            else:
+                print("Not enough mana!")
+                use_magic(enemy,health,ehealth,mana)
+
+        elif choice == 0:
+            pass
+        else:
+            print("Invalid Input.")
+            use_magic(enemy,health,ehealth,mana)
+    else:
+        print("Invalid Input.")
+    return (health,ehealth,mana)
+
+# Enemy Select
+def enemyselect():
+    op()
+    disp("esel")
+    print("Pick an enemy level")
+    max = len(bossdefeat) + 1
+    for i in range(0,max):
+        print(f"{i+1}. Level {i+1}")
+    print("0. Exit")
+    choice = input()
+
+    if choice == "final boss":
+        enemy = enemylist[-1][0]
+        battle(enemy)
+    
+    if choice == "adapt":
+        enemy = enemylist[-2][0]
+        battle(enemy)
+
+    elif choice.isdigit():
+        if 0 <= int(choice) <= max:
+            if choice == "0":
+                main()
+            for i in range(1,10):
+                if choice == str(i):
+                    if prog[i] > 2:
+                        print(f"The final boss of level {i} has appeared. Fight the boss? (Y/N)")
+                        boss = input()
+                        if boss.lower() in "yes":
+                            enemy = bosses[i-1]
+                            battle(enemy)
+                        else:
+                            enemy = enemylist[i-1][rd(0,3)]
+                            battle(enemy)
+                    else:
+                        enemy = enemylist[i-1][rd(0,3)]
+                        battle(enemy)
+        else:
+            print("Invalid Input.")
+            sleep(1)
+            enemyselect()
+    else:
+        print("Invalid Input.")
+        sleep(1)
+        enemyselect()
+
+# Developer Menu
+def devmenu():
+    dev = var['dev']
+    totalxp = var['totalxp']
+    exp = var['exp']
+    gold = var['gold']
+    op()
+    if dev:
+        disp("main")
+        print("What would you like to edit?\n1. Player Attributes\n2. Player Stats\n3. Inventory\n4. Exit")
+        choice = input()
+        if choice.isdigit():
+            if len(choice) == 1 and choice in "1234":
+                op()
+                if choice == "1":
+                    print("Attributes:")
+                    print(f"1. Mana:{attributes['Mana']}\n2. Health:{attributes['Health']}\n3. Dexterity:{attributes['Dexterity']}")
+                    print("What would you like to change?")
+                    attr = input()
+                    if len(attr) == 1 and attr in "123":
+                        attribute = list(attributes.keys())[int(attr) - 1]
+                        print(f"How much do you want to set {attribute} to?")
+                        attrset = input()
+                        if attrset.isdigit():
+                            attributes[attribute] = int(attrset)
+                    devmenu()
+
+                if choice == "2":
+                    print("Stats:")
+                    allstats = list(stats.keys())
+                    for i in range(len(stats)):
+                        print(f"{i+1}. {allstats[i]}:{stats[allstats[i]]}")
+                    print(f"8. Total XP:{totalxp}\n9. Gold:{gold}")
+                    print("What would you like to change?")
+                    stat = input()
+                    if len(stat) == 1 and stat in "1234567":
+                        sel = list(stats.keys())[int(stat) - 1]
+                        print(f"How much do you want to set {sel} to?")
+                        statset = input()
+                        if statset.isdigit():
+                            stats[sel] = int(statset)
+                            for i in stats:
+                                var['level'] += stats[i]
+
+                    if stat == "8":
+                        print(f"How much do you want to set your XP to?")
+                        sel = input()
+                        if sel.isdigit():
+                            totalxp = int(sel)
+                            exp = totalxp
+                            levelcheck("main")
+
+                    if stat == "9":
+                        print(f"How much do you want to set your Gold to?")
+                        sel = input()
+                        if sel.isdigit():
+                            gold = int(sel)
+                        else:
+                            print("Invalid Input.")
+                    var['totalxp'] = totalxp
+                    var['exp'] = exp
+                    var['gold'] = gold
+                    updatestats()
+                    devmenu()
+                if choice == "3":
+                    print("Change your inventory. Add/Remove (Item name)")
+                    invchange = input().strip()
+                    success = False
+                    if invchange.lower().startswith("add"):
+                        invchange = invchange[4:]
+                        for i in allwpn:
+                            if i == invchange:
+                                inv["weapons"].append(i)
+                                success = True
+                        for i in allamr:
+                            if i == invchange:
+                                inv["armors"].append(i)
+                                success = True
+                        for i in allpots:
+                            if i == invchange:
+                                inv["potions"][i] += 1
+                                success = True
+                        for level in enemylist:
+                            for enemy in level:
+                                for i in enemy["drops"]:
+                                    if i["name"] == invchange:
+                                        inv["items"].append(invchange)
+                                        success = True
+                        if success:
+                            print(f"Added {invchange} to inventory.")
+                        else:
+                            print(f"{invchange} not found.")
+                    if invchange.lower().startswith("remove"):
+                        invchange = invchange[7:]
+                        if invchange in "Branch None":
+                            print("Starting Items cannot be removed.")
+                        else:
+                            for i in inv["weapons"]:
+                                if i == invchange:
+                                    inv["weapons"].remove(i)
+                                    success = True
+                            for i in inv["armors"]:
+                                if i == invchange:
+                                    inv["armors"].remove(i)
+                                    success = True
+                            for i in inv["potions"]:
+                                if i == invchange:
+                                    if inv["potions"][i] > 0:
+                                        inv["potions"][i] -= 1
+                                        success = True
+                            for i in inv["items"]:
+                                if i == invchange:
+                                    inv["items"].remove(i)
+                            if success:
+                                print(f"Removed {invchange} from inventory.")
+                            else:
+                                print(f"{invchange} not found.")
+                    devmenu()
+                elif choice == "4":
+                    main()
+            else:
+                print("Invalid Input.")
+                sleep(1)
+                devmenu()
+    else:
+        main()
+
+# Show Stats:
+def showstats():
+    updatestats()
+    print("Player Stats:")
+    for stat, value in stats.items():
+        print(f"{stat}: {value}")
+    print("1.Edit stats\n2.Exit")
+    edit = input()
+    if edit.isdigit():
+        if edit in "12" and len(edit) == 1:
+            if edit == "1":
+                levelcheck("main")
+                showstats()
+            elif edit == "2":
+                main()
+            else:
+                print("Invalid Input.")
+        else:
+            print("Invalid Input.")
+    else:
+        print("Invalid Input.")
+    op()
+    updatestats()
+    showstats()
+
+# Save and Autosave Data
+def save(savedata):
+    sf = ""
+    sf += str(len(var)) + ","
+    for i in var:
+        sf += (str(var[i]) + ",")
+    sf += (str(len(prog)) + ",")
+    for i in prog:
+        sf += (str(prog[i]) + ",")
+    sf += (str(len(bossdefeat)) + ",")
+    for i in bossdefeat:
+        sf += (str(i) + ",")
+    sf += (str(len(stats)) + ",")
+    for i in stats:
+        sf += (str(stats[i]) + ",")
+    for item in inv:
+        sf += (str(len(inv[item])) + ",")
+        if item != "potions":
+            for i in inv[item]:
+                sf += (str(i) + ",")
+        else:
+            for i in inv[item]:
+                sf += (str(inv[item][i]) + ",")
+    encrypt = ""
+    for i in sf:
+        encrypt += str(ord(i) * 7)
+
+    with open(savedata,"w") as savefile:
+        savefile.write(encrypt)
+
+    if savedata == "save.txt":
+        print("Copy save data somewhere or download save.txt to continue playing next time.\n")
+        print(encrypt)
+
+# Load Save Data
+def load(savedata,stype):
+    if savedata != "reset.txt":
+        if stype == "file":
+            with open(savedata,"r") as sf:
+                encrypt = sf.readline()
+        else:
+            encrypt = savedata
+        decrypt = ""
+
+        for i in range(0,len(encrypt),3):
+            decrypt += chr(int(encrypt[i:i+3])//7)
+        save_file = decrypt.split(",")
+
+        if save_file[0] != "13":
+            return "No Save Data"
+    else:
+        with open("reset.txt","r") as reset:
+            save_file = reset.readline().split(",")
+    savefile = []
+
+    for i in save_file:
+        if i.isdigit():
+            savefile.append(int(i))
+        else:
+            savefile.append(i)
+
+    print(savefile)
+    varlist = list(var.keys())
+    count = int(savefile[0])
+    savefile.pop(0)
+    for i in range(count):
+        var[varlist[i]] = savefile[0]
+        savefile.pop(0)
+    print(savefile)
+    proglist = list(prog.keys())
+    count = int(savefile[0])
+    savefile.pop(0)
+    for i in range(count):
+        prog[proglist[i]] = savefile[0]
+        savefile.pop(0)
+    print(savefile)
+    count = int(savefile[0])
+    savefile.pop(0)
+    for i in range(count):
+        bossdefeat.append(savefile[0])
+        savefile.pop(0)
+    print(savefile)
+    statslist = list(stats.keys())
+    count = int(savefile[0])
+    savefile.pop(0)
+    for i in range(count):
+        stats[statslist[i]] = savefile[0]
+        savefile.pop(0)
+    for item in inv:
+        print(savefile)
+        count = int(savefile[0])
+        savefile.pop(0)
+        if item != "potions":
+            for i in range(count):
+                inv[item].append(savefile[0])
+                savefile.pop(0)
+        else:
+            for i in range(count):
+                pot = list(inv["potions"].keys())
+                inv[item][pot[i]] = savefile[0]
+                savefile.pop(0)
+
+# Exit
+def exit():
+    op()
+    print("Saving")
+    sleep(1)
+    op()
+    save("save.txt")
+    print("Save Finish")
+    sleep(2)
+    print("Exiting")
+    return None
+
+# Main
+def main():
+    updatestats()
+    op()
+    save("autosave.txt")
+    win()
+    disp("main")
+    print("1. Battle\n2. Shop\n3. Inventory\n4. Check Stats\n5. Save & Exit")
+    choice = input()
+    if choice == "dev mode":
+        devmenu()
+    elif choice.isdigit():
+        if 1<= int(choice) <=5:
+            if choice == "1":
+                enemyselect()
+            elif choice == "2":
+                shop()
+            elif choice == "3":
+                manage_inventory()
+            elif choice == "4":
+                op()
+                showstats()
+
+            elif choice == "5":
+                exit()
+    else:
+        print("Invalid Input.")
+        sleep(1)
+        main()
+
+# Tutorial
+def tutorial():
+    print("Do you want to go through the tutorial? (yes / no)")
+    yesno = input().lower()
+    while True:
+        if yesno == "yes":
+            okok = ""
+            while okok != "1":
+                print("All inputs are numerical unless stated otherwise\n1.Ok")
+                okok = input()
+                if okok != "1":
+                    print("Try Again.")
+                else:
+                    break
+                sleep(2)
+                op()
+            print("In this game, you can buy weapons and armor to earn gold.")
+            sleep(1)
+            print("You can upgrade different stats. (Dexterity increases dodge chance)")
+            sleep(1)
+            print("Have fun.")
+            input()
+            break
+        elif yesno == "no":
+            break
+        else:
+            print("Follow instructions")
+            sleep(1)
+            op()
+
+# Start game:
+def title():
+    op()
+    epoch = {
+            1:"______________________________________  __",
+            2:"___  ____/__  __ \\_  __ \\_  ___/___  / / /",
+            3:"__  __/  __  /_/ /  / / /  /    __  /_/ / ",
+            4:"_  /___  _  ____// /_/ // /___  _  __  /  ",
+            5:"/_____/  /_/     \\____/ \\____/  /_/ /_/   "
+            }
+
+    for i in epoch:
+        print(epoch[i])
+
+    print("1. New Game\n2. Load Game")
+    with open("save.txt","w") as sf:
+        sf.write("0")
+    choice = input()
+
+    if len(choice) == 1 and choice in "12":
+        if choice == "1":
+            op()
+            newgame()
+        elif choice == "2":
+            print("How would you like to load your save data?\n1. Save Text\n2. Save File")
+            savetype = input()
+            if savetype == "1":
+                print("Paste your Save Text here:")
+                savetext = input()
+                if len(savetext) >= 258:
+                    load(savetext,"ack")
+                    op()
+                    loading()
+                    main()
+                else:
+                    print("Ensure Save Text is copied fully and valid.")
+                    sleep(3)
+                    title()
+            elif savetype == "2":
+                print("Upload your save file before continuing. Delete the existing save.txt and upload yours.")
+                input()
+                if load("save.txt","file") != "No Save Data":
+                    op()
+                    loading()
+                    main()
+                else:
+                    print("No Save Data Found. Ensure save file is named correctly")
+                    sleep(3)
+                    title()
+            else:
+                print("Invalid Input.")
+                title()
+        else:
+            print("Invalid Input.")
+            title()
+    else:
+        print("Invalid Input.")
+        title()
+
+def start():
+    tutorial()
+    title()
+
+start()
